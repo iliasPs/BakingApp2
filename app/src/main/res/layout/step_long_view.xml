@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="16dp"
+    android:orientation="horizontal">
+
+
+    <TextView
+        android:id="@+id/stepLongDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Pour the filling into the prepared crust and smooth the top. Spread the whipped cream over the filling. Refrigerate the pie for a"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

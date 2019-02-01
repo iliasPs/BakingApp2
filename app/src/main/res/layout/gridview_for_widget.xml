@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+xmlns:tools="http://schemas.android.com/tools">
+
+<TextView
+    android:id="@+id/recipe_title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_alignParentTop="true"
+    android:layout_alignParentStart="true"
+    android:layout_alignParentEnd="true"
+    android:gravity="center_horizontal"
+    android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
+    android:textColor="@android:color/white"
+    android:textStyle="bold"
+    tools:text="This is the Title"
+    android:background="@color/colorPrimaryDark"/>
+
+<ListView
+    android:id="@+id/ingredient_grid_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_below="@id/recipe_title"
+    android:layout_alignParentStart="true"
+    android:layout_alignParentEnd="true"
+    android:background="@color/colorPrimaryDark"/>
+
+<RelativeLayout
+    android:id="@+id/empty_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_alignParentStart="true"
+    android:layout_alignParentEnd="true"
+    android:layout_alignParentTop="true"
+    android:orientation="vertical">
+    <TextView
+        android:layout_centerInParent="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:text="No Recipe Selected"
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+
+</RelativeLayout>
+
+
+</RelativeLayout>
