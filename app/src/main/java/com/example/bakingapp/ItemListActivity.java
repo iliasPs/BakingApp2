@@ -1,5 +1,6 @@
 package com.example.bakingapp;
 
+import android.app.FragmentManager;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,11 +11,12 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
 
 import com.example.bakingapp.Adapters.RecipeAdapter;
+import com.example.bakingapp.Adapters.StepAdapter;
 import com.example.bakingapp.DB.RecipeRepository;
 import com.example.bakingapp.Models.Recipe;
+import com.example.bakingapp.Models.Step;
 import com.example.bakingapp.Utilities.JsonUtils;
 import com.example.bakingapp.Utilities.NetworkUtils;
 
@@ -31,7 +33,7 @@ import java.util.concurrent.ExecutionException;
  * item details. On tablets, the activity presents the list of items and
  * item details side-by-side using two vertical panes.
  */
-public class ItemListActivity extends AppCompatActivity implements RecipeAdapter.RecipeClickListener{
+public class ItemListActivity extends AppCompatActivity implements RecipeAdapter.RecipeClickListener, StepAdapter.StepClickListener{
 
 
     final static private String BASE_RECIPE_URL = "https://d17h27t6h515a5.cloudfront.net/topher/2017/May/59121517_baking/baking.json";
@@ -42,8 +44,10 @@ public class ItemListActivity extends AppCompatActivity implements RecipeAdapter
     private static final String RECIPE_ID="recipe_id";
     public static final String ARG_BOOLEAN = "boolean_two_pane";
     private List<Recipe> mRecipes;
+    private List<Step> stepList;
     private RecipeAdapter mAdapter;
-
+    private View stepRv;
+    Toolbar toolbar;
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
@@ -56,11 +60,14 @@ public class ItemListActivity extends AppCompatActivity implements RecipeAdapter
         setContentView(R.layout.activity_item_list);
 
         recipeRepository = new RecipeRepository(getApplication());
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+         toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setTitle(getTitle());
 
 
+
+        stepRv = findViewById(R.id.stepsRV);
+//        if(!mTwoPane){
+//        stepRv.setVisibility(View.GONE);}
         if (findViewById(R.id.recipe_detail_container) != null) {
             // The detail container view will be present only in the
             // large-screen layouts (res/values-w900dp).
@@ -70,13 +77,30 @@ public class ItemListActivity extends AppCompatActivity implements RecipeAdapter
         }
         runnables(recipeRepository);
         new Handler().postDelayed(saveDB, 0);
-        View recyclerView = findViewById(R.id.recipeRV);
-        assert recyclerView != null;
-        setRv((RecyclerView) recyclerView);
+        View recipeRv = findViewById(R.id.recipeRV);
+        assert recipeRv != null;
+
+
+        setRecipeListRv((RecyclerView) recipeRv);
+
+        getFragmentManager().addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                int stackHeight = getFragmentManager().getBackStackEntryCount();
+                if (stackHeight > 0) { // if we have something on the stack (doesn't include the current shown fragment)
+                   getActionBar().setHomeButtonEnabled(true);
+                   getActionBar().setDisplayHomeAsUpEnabled(true);
+                } else {
+                   getActionBar().setDisplayHomeAsUpEnabled(false);
+                   getActionBar().setHomeButtonEnabled(false);
+                }
+            }
+
+        });
 
     }
 
-    private void setRv(RecyclerView recyclerView) {
+    private void setRecipeListRv(RecyclerView recyclerView) {
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, RecyclerView.VERTICAL, false);
         mAdapter = new RecipeAdapter(this, mRecipes, this, mTwoPane);
         mRecipes = recipeRepository.getRecipes(mAdapter);
@@ -133,8 +157,10 @@ public class ItemListActivity extends AppCompatActivity implements RecipeAdapter
             RecipeDetailFragment recipeDetailFragment = new RecipeDetailFragment();
             recipeDetailFragment.setArguments(bundle);
             getSupportFragmentManager().beginTransaction().replace(R.id.recipe_detail_container, recipeDetailFragment).commit();
-        }else{
+            toolbar.setTitle(recipe.getRecipeName());
 
+
+        }else{
             try {
                 Thread.sleep(750);
             } catch (InterruptedException e) {
@@ -144,6 +170,12 @@ public class ItemListActivity extends AppCompatActivity implements RecipeAdapter
             intent.putExtra(RECIPE_ID, recipe.getRecipeId());
             startActivity(intent);
         }
+
+    }
+
+
+    @Override
+    public void onClick(View view, Step step) {
 
     }
 }

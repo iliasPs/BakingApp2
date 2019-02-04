@@ -6,7 +6,7 @@
         android:id="@+id/widget_list_quantity"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/colorAccent"
+        android:textColor="@android:color/black"
         android:layout_margin="8dp"
         android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
     <TextView

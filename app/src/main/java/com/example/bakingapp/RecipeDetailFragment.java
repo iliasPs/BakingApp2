@@ -1,6 +1,11 @@
 package com.example.bakingapp;
 
+import android.app.ActionBar;
 import android.app.Activity;
+import android.appwidget.AppWidgetManager;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.preference.PreferenceManager;
@@ -11,21 +16,31 @@ import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Toolbar;
 
+import com.bumptech.glide.Glide;
 import com.example.bakingapp.Adapters.IngredientsAdapter;
+import com.example.bakingapp.Adapters.StepAdapter;
 import com.example.bakingapp.DB.RecipeRepository;
 import com.example.bakingapp.Models.Ingredient;
 import com.example.bakingapp.Models.Recipe;
 import com.example.bakingapp.Models.Step;
+import com.example.bakingapp.Utilities.GlideApp;
+import com.example.bakingapp.Utilities.GlideThumbnailTransformation;
+import com.example.bakingapp.Utilities.SimpleDividerItemDecoration;
+import com.example.bakingapp.widget.RecipeAppWidgetProvider;
+import com.github.rubensousa.previewseekbar.PreviewLoader;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -42,6 +57,7 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import com.shuhart.stepview.StepView;
+import com.bumptech.glide.request.target.Target;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +71,7 @@ import java.util.List;
 
 
 
-public class RecipeDetailFragment extends Fragment implements View.OnClickListener, StepView.OnStepClickListener {
+public class RecipeDetailFragment extends Fragment implements View.OnClickListener, StepView.OnStepClickListener, PreviewLoader, StepAdapter.StepClickListener {
 
     private RecyclerView ingredientsRV;
     private List<Step> stepList = new ArrayList<>();
@@ -65,6 +81,7 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     private TextView stepShortDescTv;
     private TextView stepLongDescTv;
     private TextView stepIdTv;
+    private ImageView previewImageView;
     private SimpleExoPlayer exoPlayer;
     private PlayerView exoPlayerView;
     private int currentWindow;
@@ -89,6 +106,10 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     private final RecipeRepository recipeRepo;
     private SharedPreferences sharedPreferences;
     public static String EXTRA_RECIPE_ID = "recipe_id_from_widget";
+    private StepAdapter stepAdapter;
+    View recipeRv;
+    View stepsRV;
+
 
 
     public RecipeDetailFragment(){
@@ -109,6 +130,8 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         super.onCreate(savedInstanceState);
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+
+        stepsRV = (RecyclerView) getActivity().findViewById(R.id.stepsRV);
 
         if(getArguments() !=null && getArguments().containsKey(RECIPE_ID)){
             int recipeID = getArguments().getInt(RECIPE_ID);
@@ -131,44 +154,32 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
             videoUri = Uri.parse(stepList.get(0).getStepVideoUrl());
         }
 
+
+
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
         if(!mTwoPane) {
             Activity activity = this.getActivity();
             CollapsingToolbarLayout collapsingToolbarLayout = activity.findViewById(R.id.toolbar_layout);
             collapsingToolbarLayout.setTitle(recipe.getRecipeName());
         }
+
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-
-
         final View rootView = inflater.inflate(R.layout.recipe_details, container, false);
         exoPlayerView = rootView.findViewById(R.id.exoplayer);
 
-        Toolbar toolbar =  (Toolbar) rootView.findViewById(R.id.toolbar);
+        previewImageView = rootView.findViewById(R.id.previewImageView);
 
-        toolbar.setTitle(recipe.getRecipeName());
-
-
-            FloatingActionButton fab;
-
-            FloatingActionButton fabNotTwoPane;
-            if (mTwoPane) {
-                Log.d("detFrag", "its 2 panel! ");
-                fabNotTwoPane = rootView.findViewById(R.id.addToWidgetFab);
-                fabNotTwoPane.show();
-                fabNotTwoPane.setOnClickListener(this);
-
-            }else{
-                Log.d("detFrag", "its 1 panel! ");
-                fabNotTwoPane = rootView.findViewById(R.id.addToWidgetFab);
-                fabNotTwoPane.hide();
-                fab= getActivity().findViewById(R.id.fabOnePane);
-                fab.setOnClickListener(this);
-
-            }
+        FloatingActionButton fab;
 
         stepView = rootView.findViewById(R.id.recipe_steps);
         stepView.setStepsNumber(stepList.size());
@@ -189,18 +200,36 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         ingredientsRV = rootView.findViewById(R.id.ingredientsRV);
         ingredientsRV.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
         ingredientsRV.setHasFixedSize(true);
-
         ingredientsRV.setAdapter(new IngredientsAdapter(getContext(), ingredients));
 
+            FloatingActionButton fabNotTwoPane;
+            if (mTwoPane) {
+                Log.d("detFrag", "its 2 panel! ");
+                fabNotTwoPane = rootView.findViewById(R.id.addToWidgetFab);
+                fabNotTwoPane.show();
+                fabNotTwoPane.setOnClickListener(this);
+
+                recipeRv = getActivity().findViewById(R.id.recipeRV);
+                recipeRv.setVisibility(View.GONE);
+
+                stepsRV.setVisibility(View.VISIBLE);
+                setStepRv((RecyclerView) stepsRV, recipe);
+                stepView.setVisibility(View.GONE);
+
+            }else{
+                Log.d("detFrag", "its 1 panel! ");
+                fabNotTwoPane = rootView.findViewById(R.id.addToWidgetFab);
+                fabNotTwoPane.hide();
+                fab= getActivity().findViewById(R.id.fabOnePane);
+                fab.setOnClickListener(this);
+            }
         return rootView;
     }
-
 
     public void initializePlayer(Uri uri) {
         if (uri == null) {
             exoPlayerView.setVisibility(View.GONE);
         } else {
-
             defaultBandwidthMeter = new DefaultBandwidthMeter();
             trackSelectionFactory = new AdaptiveTrackSelection.Factory(defaultBandwidthMeter);
             trackSelector = new DefaultTrackSelector(trackSelectionFactory);
@@ -209,7 +238,6 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
             exoPlayerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH);
             dataSourceFactory = new DefaultDataSourceFactory(getContext(), Util.getUserAgent(getContext(), "bakingapp"), defaultBandwidthMeter);
             mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(videoUri);
-
             exoPlayer.prepare(mediaSource);
             if (playbackPosition != C.TIME_UNSET) {
                 exoPlayer.seekTo(playbackPosition);
@@ -217,6 +245,15 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         }
     }
 
+    private void setStepRv(RecyclerView recyclerView, Recipe recipe) {
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity().getApplicationContext(), RecyclerView.VERTICAL, false);
+        stepAdapter = new StepAdapter(getActivity().getApplicationContext(), stepList, this);
+        stepList = recipe.getRecipeSteps();
+        recyclerView.setAdapter(stepAdapter);
+        recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
+        stepAdapter.notifyDataSetChanged();
+    }
 
     @Override
     public void onClick(View v) {
@@ -227,6 +264,13 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
                 editor.putInt(RECIPE_ID, recipe.getRecipeId());
                 editor.putString(RECIPE_NAME, recipe.getRecipeName());
                 editor.apply();
+
+                int[] ids = AppWidgetManager.getInstance(getActivity().getApplication())
+                        .getAppWidgetIds(new ComponentName(getActivity().getApplication(), RecipeAppWidgetProvider.class));
+
+                RecipeAppWidgetProvider recipeAppWidgetProvider = new RecipeAppWidgetProvider();
+                recipeAppWidgetProvider.onUpdate(this.getActivity(), AppWidgetManager.getInstance(this.getActivity()), ids);
+
                 Toast.makeText(getContext(), "Recipe Saved to Widget", Toast.LENGTH_SHORT).show();
                 break;
         }
@@ -243,11 +287,20 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         }
         stepShortDescTv.setText(stepList.get(step).getStepShortDescription());
         stepLongDescTv.setText(stepList.get(step).getStepDescription());
-
         videoUri = Uri.parse(stepList.get(step).getStepVideoUrl());
+
         Log.d("videouri", "videouri " + videoUri);
         initializePlayer(videoUri);
 
+    }
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (Util.SDK_INT > 23) {
+            initializePlayer(videoUri);
+        }
     }
 
     @Override
@@ -305,4 +358,37 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
             trackSelectionFactory = null;
         }
     }
+
+    @Override
+    public void loadPreview(long currentPosition, long max) {
+        exoPlayer.setPlayWhenReady(false);
+        GlideApp.with(previewImageView)
+                .load(videoUri)
+                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                .transform(new GlideThumbnailTransformation(currentPosition))
+                .into(previewImageView);
+    }
+
+    @Override
+    public void onClick(View view, Step step) {
+
+        stepShortDescTv.setText(step.getStepShortDescription());
+        stepLongDescTv.setText(step.getStepDescription());
+
+        videoUri = Uri.parse(step.getStepVideoUrl());
+        Log.d("videouri", "videouri " + videoUri);
+        initializePlayer(videoUri);
+    }
+
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                getFragmentManager().popBackStack();
+        }
+                return true;
+        }
+
 }
