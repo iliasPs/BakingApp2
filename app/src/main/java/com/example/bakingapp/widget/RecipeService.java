@@ -52,7 +52,11 @@ class BakingAppRemoteViewsFactory implements RemoteViewsService.RemoteViewsFacto
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         recipeID = sharedPreferences.getInt(RECIPE_ID, 0);
+/**
+ * I NEED TO CHECK IF THE CONTEXT IS NULL BEFORE I PASS IT - THIS CAUSES WIDGET CRASH
+ */
         recipeRepository = new RecipeRepository(BakingApp.getContext());
+
         recipe = recipeRepository.getCurrentRecipe(recipeID);
         ingredients = recipe.getRecipeIngredients();
     }

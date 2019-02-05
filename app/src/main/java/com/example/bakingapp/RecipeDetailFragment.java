@@ -91,6 +91,7 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     private DataSource.Factory dataSourceFactory;
     private MediaSource mediaSource;
     private boolean playWhenReady;
+    private boolean playState;
     private Uri videoUri;
     private long playbackPosition;
     private Boolean mTwoPane = false;
@@ -101,6 +102,7 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     private static String RECIPE_ID="recipe_id";
     private static String RECIPE_NAME="recipe_name";
     private static String PLAY_WHEN_READY_SAVED = "play_ready_saved";
+    private static String PLAY_WHEN_READY_STATE = "play_state";
     public static final String ARG_BOOLEAN = "boolean_two_pane";
     private List<Ingredient> ingredients = new ArrayList<>();
     private final RecipeRepository recipeRepo;
@@ -123,6 +125,7 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         outState.putInt(CURRENT_STEP, stepView.getCurrentStep());
         outState.putInt(WINDOW, exoPlayer.getCurrentWindowIndex());
         outState.putString(VIDEO_URI, stepList.get(stepView.getCurrentStep()).getStepVideoUrl());
+        outState.putBoolean(PLAY_WHEN_READY_STATE, exoPlayer.getPlayWhenReady());
     }
 
     @Override
@@ -147,6 +150,7 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
             currentWindow = savedInstanceState.getInt(WINDOW, 0);
             videoUri = Uri.parse(savedInstanceState.getString(VIDEO_URI, ""));
             playWhenReady = savedInstanceState.getBoolean(PLAY_WHEN_READY_SAVED, true);
+            exoPlayer.setPlayWhenReady(savedInstanceState.getBoolean(PLAY_WHEN_READY_STATE));
 
         }
 
@@ -264,16 +268,21 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
                 editor.putInt(RECIPE_ID, recipe.getRecipeId());
                 editor.putString(RECIPE_NAME, recipe.getRecipeName());
                 editor.apply();
-
-                int[] ids = AppWidgetManager.getInstance(getActivity().getApplication())
-                        .getAppWidgetIds(new ComponentName(getActivity().getApplication(), RecipeAppWidgetProvider.class));
-
-                RecipeAppWidgetProvider recipeAppWidgetProvider = new RecipeAppWidgetProvider();
-                recipeAppWidgetProvider.onUpdate(this.getActivity(), AppWidgetManager.getInstance(this.getActivity()), ids);
-
+                sentToWidgetProvider();
                 Toast.makeText(getContext(), "Recipe Saved to Widget", Toast.LENGTH_SHORT).show();
                 break;
         }
+    }
+
+    private void sentToWidgetProvider() {
+        int[] ids = AppWidgetManager.getInstance(getActivity().getApplication())
+                .getAppWidgetIds(new ComponentName(getActivity().getApplication(), RecipeAppWidgetProvider.class));
+
+        Intent intent = new Intent(getActivity().getApplicationContext(), RecipeAppWidgetProvider.class);
+        intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, ids);
+        getActivity().getApplication().sendBroadcast(intent);
+        Log.d("mymessage", "intent" + intent);
     }
 
     @Override
@@ -391,4 +400,6 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
                 return true;
         }
 
+//                 RecipeAppWidgetProvider recipeAppWidgetProvider = new RecipeAppWidgetProvider();
+//                   recipeAppWidgetProvider.onUpdate(this.getActivity(), AppWidgetManager.getInstance(this.getActivity()), ids);
 }
