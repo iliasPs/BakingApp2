@@ -26,7 +26,6 @@ public class StepAdapter extends RecyclerView.Adapter<StepAdapter.StepsViewHolde
         this.stepList = steps;
     }
 
-
     @NonNull
     @Override
     public StepsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int i) {
@@ -50,7 +49,6 @@ public class StepAdapter extends RecyclerView.Adapter<StepAdapter.StepsViewHolde
     public int getItemCount() {
         return (null != stepList ? stepList.size() : 0);
     }
-
 
 
     /**

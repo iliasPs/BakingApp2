@@ -22,7 +22,6 @@ public class RecipeRepository {
         recipesDao = appDatabase.recipesDao();
     }
 
-
     public List<Recipe> getRecipes(RecipeAdapter recipeAdapter){
         try{
             return new GetRecipesAsync(recipesDao, recipeAdapter).execute().get();
@@ -34,7 +33,6 @@ public class RecipeRepository {
             return null;
         }
     }
-
 
     private static class GetRecipesAsync extends AsyncTask<Void, Void, List<Recipe>> {
 

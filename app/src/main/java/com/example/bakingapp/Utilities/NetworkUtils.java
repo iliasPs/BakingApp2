@@ -67,15 +67,10 @@ public class NetworkUtils extends AsyncTask<String, Void, String> {
                 }catch (IOException e){
                     e.printStackTrace();
                 }
-
             }
         }
         return jsonResponse;
 
-
     }
-
-
-
 
 }

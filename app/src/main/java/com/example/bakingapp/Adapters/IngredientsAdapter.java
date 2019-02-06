@@ -21,9 +21,7 @@ public class IngredientsAdapter extends RecyclerView.Adapter<IngredientsAdapter.
     public IngredientsAdapter(Context context, List<Ingredient> ingredients){
         this.mLayoutInflater = LayoutInflater.from(context);
         this.ingredients = ingredients;
-
     }
-
 
     @NonNull
     @Override
@@ -45,7 +43,6 @@ public class IngredientsAdapter extends RecyclerView.Adapter<IngredientsAdapter.
         holder.ingredientQuantity.setText(ingredientQuantity);
 
     }
-
 
     @Override
     public int getItemCount()  {

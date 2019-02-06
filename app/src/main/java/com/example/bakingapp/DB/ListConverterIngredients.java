@@ -24,12 +24,10 @@ public class ListConverterIngredients {
         return json;
     }
 
-
     @TypeConverter
     public List<Ingredient> ingredientsToListFromString (String stepsJson) {
         if(stepsJson == null){
             return null;}
-
 
         Gson gson = new Gson();
         Type type = new TypeToken<List<Ingredient>>() {}.getType();

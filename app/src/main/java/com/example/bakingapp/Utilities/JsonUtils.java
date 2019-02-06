@@ -26,7 +26,6 @@ public class JsonUtils {
     public static void extractFeatureFromJsonToRoom(String recipeJson, RecipeRepository recipeRepository) {
         if (TextUtils.isEmpty(recipeJson)) {
         }
-
         List<Ingredient> ingredients;
         List<Step> steps;
 
@@ -78,18 +77,11 @@ public class JsonUtils {
                 currentRecipe.setRecipeIngredients(ingredients);
                 currentRecipe.setRecipeSteps(steps);
                 recipeRepository.insertRecipe(currentRecipe);
-
             }
-
         } catch (JSONException e) {
             Log.e("QueryUtils", "Problem parsing the news JSON results", e);
         }
     }
-
-
-
-
-
 
     /**
      * Convert the {@link InputStream} into a String which contains the

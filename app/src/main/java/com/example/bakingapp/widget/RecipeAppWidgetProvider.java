@@ -19,7 +19,6 @@ import com.example.bakingapp.RecipeDetailFragment;
  */
 public class RecipeAppWidgetProvider extends AppWidgetProvider {
 
-    private static String RECIPE_ID="recipe_id";
     private static String RECIPE_NAME="recipe_name";
 
 
@@ -28,8 +27,10 @@ public class RecipeAppWidgetProvider extends AppWidgetProvider {
         //get recipe from preferences
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         String recipeName = sharedPreferences.getString(RECIPE_NAME, "BakingApp");
+
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.gridview_for_widget);
         views.setTextViewText(R.id.recipe_title, recipeName);
+
         //intent to for gridview
         Intent intent = new Intent(context, RecipeService.class);
         views.setRemoteAdapter( R.id.ingredient_grid_view, intent);
@@ -40,9 +41,10 @@ public class RecipeAppWidgetProvider extends AppWidgetProvider {
         //set emptyview
         views.setEmptyView(R.id.ingredient_grid_view, R.id.empty_view);
         //click handler to only launch pending intents
-        views.setOnClickPendingIntent(R.id.recipe_title, appPendingIntent);
+       views.setOnClickPendingIntent(R.id.recipe_title, appPendingIntent);
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.ingredient_grid_view);
     }
 
     @Override
@@ -51,7 +53,6 @@ public class RecipeAppWidgetProvider extends AppWidgetProvider {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
-
     }
 
     @Override
@@ -64,6 +65,13 @@ public class RecipeAppWidgetProvider extends AppWidgetProvider {
         // Enter relevant functionality for when the last widget is disabled
     }
 
-
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if(intent.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_ID)){
+            int[] ids = intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_ID);
+            this.onUpdate(context, AppWidgetManager.getInstance(context), ids);
+        }else
+        super.onReceive(context, intent);
+    }
 }
 

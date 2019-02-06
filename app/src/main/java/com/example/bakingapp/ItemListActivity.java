@@ -63,11 +63,6 @@ public class ItemListActivity extends AppCompatActivity implements RecipeAdapter
          toolbar= (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
-
-        stepRv = findViewById(R.id.stepsRV);
-//        if(!mTwoPane){
-//        stepRv.setVisibility(View.GONE);}
         if (findViewById(R.id.recipe_detail_container) != null) {
             // The detail container view will be present only in the
             // large-screen layouts (res/values-w900dp).

@@ -18,7 +18,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipesVie
     private Context mContext;
     final private RecipeClickListener recipeClickListener;
 
-
     public RecipeAdapter(Context c, List<Recipe> recipes, RecipeClickListener recipeClickListener, Boolean mTwoPane) {
         this.recipeClickListener = recipeClickListener;
         Boolean mTwoPanel = mTwoPane;

@@ -30,7 +30,6 @@ public class RecipeService extends RemoteViewsService {
 class BakingAppRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory{
 
     private static String RECIPE_ID="recipe_id";
-    private static String RECIPE_NAME="recipe_name";
     private final Context mContext;
     private Recipe recipe;
     private int recipeID;
@@ -52,13 +51,14 @@ class BakingAppRemoteViewsFactory implements RemoteViewsService.RemoteViewsFacto
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         recipeID = sharedPreferences.getInt(RECIPE_ID, 0);
-/**
- * I NEED TO CHECK IF THE CONTEXT IS NULL BEFORE I PASS IT - THIS CAUSES WIDGET CRASH
- */
+        try{
         recipeRepository = new RecipeRepository(BakingApp.getContext());
-
         recipe = recipeRepository.getCurrentRecipe(recipeID);
         ingredients = recipe.getRecipeIngredients();
+        }
+        catch (NullPointerException e){
+            e.printStackTrace();
+        }
     }
 
     @Override

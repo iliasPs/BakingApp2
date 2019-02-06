@@ -1,9 +1,7 @@
 package com.example.bakingapp;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,13 +10,12 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.os.Bundle;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -27,9 +24,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.Toolbar;
 
-import com.bumptech.glide.Glide;
 import com.example.bakingapp.Adapters.IngredientsAdapter;
 import com.example.bakingapp.Adapters.StepAdapter;
 import com.example.bakingapp.DB.RecipeRepository;
@@ -92,6 +87,7 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     private MediaSource mediaSource;
     private boolean playWhenReady;
     private boolean playState;
+
     private Uri videoUri;
     private long playbackPosition;
     private Boolean mTwoPane = false;
@@ -121,11 +117,11 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putLong(PLAYER_POSITION, exoPlayer.getCurrentPosition());
-        outState.putInt(CURRENT_STEP, stepView.getCurrentStep());
+        outState.putLong(PLAYER_POSITION, playbackPosition);
+        outState.putInt(CURRENT_STEP, savedStep);
         outState.putInt(WINDOW, exoPlayer.getCurrentWindowIndex());
-        outState.putString(VIDEO_URI, stepList.get(stepView.getCurrentStep()).getStepVideoUrl());
-        outState.putBoolean(PLAY_WHEN_READY_STATE, exoPlayer.getPlayWhenReady());
+        outState.putString(VIDEO_URI, videoUri.toString());
+        outState.putBoolean(PLAY_WHEN_READY_STATE, playWhenReady);
     }
 
     @Override
@@ -133,8 +129,6 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         super.onCreate(savedInstanceState);
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-
-        stepsRV = (RecyclerView) getActivity().findViewById(R.id.stepsRV);
 
         if(getArguments() !=null && getArguments().containsKey(RECIPE_ID)){
             int recipeID = getArguments().getInt(RECIPE_ID);
@@ -145,33 +139,29 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         }
 
         if(savedInstanceState !=null){
-            playbackPosition = savedInstanceState.getLong(PLAYER_POSITION, 0);
-            savedStep = savedInstanceState.getInt(CURRENT_STEP, 0);
+            playbackPosition = savedInstanceState.getLong(PLAYER_POSITION);
+            savedStep = savedInstanceState.getInt(CURRENT_STEP);
+            Log.d("mymessage", "getting step position " +savedInstanceState.getInt(CURRENT_STEP));
             currentWindow = savedInstanceState.getInt(WINDOW, 0);
-            videoUri = Uri.parse(savedInstanceState.getString(VIDEO_URI, ""));
-            playWhenReady = savedInstanceState.getBoolean(PLAY_WHEN_READY_SAVED, true);
-            exoPlayer.setPlayWhenReady(savedInstanceState.getBoolean(PLAY_WHEN_READY_STATE));
-
+            playWhenReady = savedInstanceState.getBoolean(PLAY_WHEN_READY_SAVED);
         }
 
         if(!stepList.get(0).getStepVideoUrl().isEmpty()){
             videoUri = Uri.parse(stepList.get(0).getStepVideoUrl());
         }
-
-
-
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+
         if(!mTwoPane) {
+
             Activity activity = this.getActivity();
             CollapsingToolbarLayout collapsingToolbarLayout = activity.findViewById(R.id.toolbar_layout);
             collapsingToolbarLayout.setTitle(recipe.getRecipeName());
         }
-
     }
 
     @Nullable
@@ -179,49 +169,37 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         final View rootView = inflater.inflate(R.layout.recipe_details, container, false);
-        exoPlayerView = rootView.findViewById(R.id.exoplayer);
 
+        exoPlayerView = rootView.findViewById(R.id.exoplayer);
         previewImageView = rootView.findViewById(R.id.previewImageView);
 
         FloatingActionButton fab;
-
         stepView = rootView.findViewById(R.id.recipe_steps);
         stepView.setStepsNumber(stepList.size());
         stepView.setOnStepClickListener(this);
         stepView.go(savedStep, true);
 
         initializePlayer(Uri.parse(stepList.get(stepView.getCurrentStep()).getStepVideoUrl()));
-
         stepShortDescTv = rootView.findViewById(R.id.stepTvShort);
-        stepShortDescTv.setText(stepList.get(0).getStepShortDescription());
+        stepShortDescTv.setText(stepList.get(savedStep).getStepShortDescription());
         stepLongDescTv = rootView.findViewById(R.id.stepLongDesc);
-
-
-        stepLongDescTv.setText(stepList.get(0).getStepDescription());
-
-
+        stepLongDescTv.setText(stepList.get(savedStep).getStepDescription());
         //ingredients setting
         ingredientsRV = rootView.findViewById(R.id.ingredientsRV);
         ingredientsRV.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
         ingredientsRV.setHasFixedSize(true);
         ingredientsRV.setAdapter(new IngredientsAdapter(getContext(), ingredients));
 
+
             FloatingActionButton fabNotTwoPane;
             if (mTwoPane) {
-                Log.d("detFrag", "its 2 panel! ");
                 fabNotTwoPane = rootView.findViewById(R.id.addToWidgetFab);
                 fabNotTwoPane.show();
                 fabNotTwoPane.setOnClickListener(this);
-
                 recipeRv = getActivity().findViewById(R.id.recipeRV);
-                recipeRv.setVisibility(View.GONE);
-
-                stepsRV.setVisibility(View.VISIBLE);
-                setStepRv((RecyclerView) stepsRV, recipe);
+                setStepRv((RecyclerView) recipeRv, recipe);
                 stepView.setVisibility(View.GONE);
-
             }else{
-                Log.d("detFrag", "its 1 panel! ");
                 fabNotTwoPane = rootView.findViewById(R.id.addToWidgetFab);
                 fabNotTwoPane.hide();
                 fab= getActivity().findViewById(R.id.fabOnePane);
@@ -241,11 +219,13 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
             exoPlayerView.setPlayer(exoPlayer);
             exoPlayerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH);
             dataSourceFactory = new DefaultDataSourceFactory(getContext(), Util.getUserAgent(getContext(), "bakingapp"), defaultBandwidthMeter);
-            mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(videoUri);
+            mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(Uri.parse(stepList.get(savedStep).getStepVideoUrl()));
             exoPlayer.prepare(mediaSource);
-            if (playbackPosition != C.TIME_UNSET) {
+
+            if (playbackPosition != 0) {
                 exoPlayer.seekTo(playbackPosition);
             }
+            exoPlayer.setPlayWhenReady(playWhenReady);
         }
     }
 
@@ -268,21 +248,21 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
                 editor.putInt(RECIPE_ID, recipe.getRecipeId());
                 editor.putString(RECIPE_NAME, recipe.getRecipeName());
                 editor.apply();
-                sentToWidgetProvider();
+                sendToWidgetProvider();
                 Toast.makeText(getContext(), "Recipe Saved to Widget", Toast.LENGTH_SHORT).show();
                 break;
         }
     }
 
-    private void sentToWidgetProvider() {
+    private void sendToWidgetProvider() {
         int[] ids = AppWidgetManager.getInstance(getActivity().getApplication())
                 .getAppWidgetIds(new ComponentName(getActivity().getApplication(), RecipeAppWidgetProvider.class));
 
         Intent intent = new Intent(getActivity().getApplicationContext(), RecipeAppWidgetProvider.class);
         intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, ids);
+        intent.putExtra("Random", Math.random() * 1000); // Add a random integer to stop the Intent being ignored.
         getActivity().getApplication().sendBroadcast(intent);
-        Log.d("mymessage", "intent" + intent);
     }
 
     @Override
@@ -294,54 +274,30 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
             stepView.done(false);
             stepView.go(step, true);
         }
-        stepShortDescTv.setText(stepList.get(step).getStepShortDescription());
-        stepLongDescTv.setText(stepList.get(step).getStepDescription());
-        videoUri = Uri.parse(stepList.get(step).getStepVideoUrl());
-
-        Log.d("videouri", "videouri " + videoUri);
+        savedStep = stepList.get(step).getStepId();
+        stepShortDescTv.setText(stepList.get(savedStep).getStepShortDescription());
+        stepLongDescTv.setText(stepList.get(savedStep).getStepDescription());
+        videoUri = Uri.parse(stepList.get(savedStep).getStepVideoUrl());
+        exoPlayer.release();
         initializePlayer(videoUri);
-
     }
 
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (Util.SDK_INT > 23) {
-            initializePlayer(videoUri);
-        }
-    }
 
     @Override
     public void onResume() {
         super.onResume();
+        videoUri= Uri.parse(stepList.get(savedStep).getStepVideoUrl());
+        stepView.go(savedStep, true);
         if ((Util.SDK_INT <= 23 || exoPlayer == null)) {
             initializePlayer(videoUri);
-        }
-        if (exoPlayer != null) {
-            if (playbackPosition > 0) {
-                exoPlayer.setPlayWhenReady(playWhenReady);
-                exoPlayerView.hideController();
             }
-            exoPlayer.seekTo(playbackPosition);
-        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
         if (exoPlayer != null) {
-            updatePositionData();
-            if (Util.SDK_INT <= 23) {
-                releasePlayer();
-            }
-        }
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (exoPlayer != null) {
+            exoPlayer.stop();
             updatePositionData();
             if (Util.SDK_INT <= 23) {
                 releasePlayer();
@@ -359,12 +315,12 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
 
     private void releasePlayer() {
         if (exoPlayer != null) {
+            playWhenReady = exoPlayer.getPlayWhenReady();
+            playbackPosition = exoPlayer.getCurrentPosition();
             exoPlayer.stop();
             exoPlayer.release();
-            exoPlayer = null;
-            dataSourceFactory = null;
-            mediaSource = null;
-            trackSelectionFactory = null;
+           exoPlayer = null;
+
         }
     }
 
@@ -380,16 +336,14 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void onClick(View view, Step step) {
-
         stepShortDescTv.setText(step.getStepShortDescription());
         stepLongDescTv.setText(step.getStepDescription());
-
         videoUri = Uri.parse(step.getStepVideoUrl());
         Log.d("videouri", "videouri " + videoUri);
+
         initializePlayer(videoUri);
+
     }
-
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -399,7 +353,4 @@ public class RecipeDetailFragment extends Fragment implements View.OnClickListen
         }
                 return true;
         }
-
-//                 RecipeAppWidgetProvider recipeAppWidgetProvider = new RecipeAppWidgetProvider();
-//                   recipeAppWidgetProvider.onUpdate(this.getActivity(), AppWidgetManager.getInstance(this.getActivity()), ids);
 }

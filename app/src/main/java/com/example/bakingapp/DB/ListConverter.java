@@ -26,12 +26,10 @@ public class ListConverter {
         return json;
     }
 
-
     @TypeConverter
     public List<Step> stepsToListFromString (String stepsJson) {
         if(stepsJson == null){
             return null;}
-
 
         Gson gson = new Gson();
         Type type = new TypeToken<List<Step>>() {}.getType();
